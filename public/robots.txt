@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /services
+Allow: /search
+Allow: /how-it-works
+Allow: /become-a-provider
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Disallow: /dashboard/
+Disallow: /book/
+
+Sitemap: https://www.tailshug.com/sitemap.xml

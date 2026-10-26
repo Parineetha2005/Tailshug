@@ -1,0 +1,549 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email == 'parineetha@tailshug.com' && request.auth.token.email_verified == true)
+      );
+    }
+
+    // 3. Entity Validation Blueprints
+    function isValidUserPublic(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'role', 'photoURL', 'createdAt', 'updatedAt']) &&
+        data.uid == request.auth.uid &&
+        isValidId(data.uid) &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        data.role is string && (data.role == 'customer' || data.role == 'provider') &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1000)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivate(data) {
+      return data.keys().hasAll(['uid', 'email', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'phone', 'city', 'pincode', 'address', 'updatedAt']) &&
+        data.uid == request.auth.uid &&
+        isValidId(data.uid) &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+        (!('city' in data) || (data.city is string && data.city.size() <= 80)) &&
+        (!('pincode' in data) || (data.pincode is string && data.pincode.size() <= 20)) &&
+        (!('address' in data) || (data.address is string && data.address.size() <= 300)) &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidPet(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'species', 'breed', 'ageYears', 'weightKg', 'vaccinated', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'name', 'species', 'breed', 'ageYears', 'weightKg', 'vaccinated', 'notes', 'createdAt', 'updatedAt']) &&
+        data.ownerId == request.auth.uid &&
+        isValidId(data.ownerId) &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+        data.species is string && (data.species in ['Dog', 'Cat', 'Bird', 'Rabbit', 'Other']) &&
+        data.breed is string && data.breed.size() >= 1 && data.breed.size() <= 80 &&
+        data.ageYears is number && data.ageYears >= 0 && data.ageYears <= 40 &&
+        data.weightKg is number && data.weightKg >= 0 && data.weightKg <= 150 &&
+        data.vaccinated is bool &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidProvider(data) {
+      return data.keys().hasAll([
+          'ownerId', 'businessName', 'categorySlug', 'categoryTitle', 'subcategories',
+          'description', 'city', 'area', 'address', 'pincode', 'publicPhone', 'publicEmail',
+          'startingPriceInr', 'servicesOffered', 'operatingHours', 'cancellationPolicy',
+          'experienceYears', 'verified', 'status', 'ratingAvg', 'reviewCount', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'businessName', 'categorySlug', 'categoryTitle', 'subcategories',
+          'description', 'city', 'area', 'address', 'pincode', 'publicPhone', 'publicEmail',
+          'website', 'startingPriceInr', 'servicesOffered', 'operatingHours', 'cancellationPolicy',
+          'experienceYears', 'coverImage', 'verified', 'status', 'ratingAvg', 'reviewCount', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.ownerId) &&
+        data.businessName is string && data.businessName.size() >= 2 && data.businessName.size() <= 120 &&
+        data.categorySlug is string && data.categorySlug.size() >= 2 && data.categorySlug.size() <= 80 &&
+        data.categoryTitle is string && data.categoryTitle.size() >= 2 && data.categoryTitle.size() <= 100 &&
+        data.subcategories is list && data.subcategories.size() >= 1 && data.subcategories.size() <= 10 &&
+        data.subcategories[0] is string && data.subcategories[0].size() <= 100 &&
+        data.description is string && data.description.size() >= 10 && data.description.size() <= 2000 &&
+        data.city is string && data.city.size() >= 2 && data.city.size() <= 80 &&
+        data.area is string && data.area.size() >= 2 && data.area.size() <= 100 &&
+        data.address is string && data.address.size() >= 5 && data.address.size() <= 300 &&
+        data.pincode is string && data.pincode.size() >= 4 && data.pincode.size() <= 12 &&
+        data.publicPhone is string && data.publicPhone.size() >= 6 && data.publicPhone.size() <= 25 &&
+        data.publicEmail is string && data.publicEmail.size() >= 3 && data.publicEmail.size() <= 150 &&
+        (!('website' in data) || (data.website is string && data.website.size() <= 300)) &&
+        data.startingPriceInr is number && data.startingPriceInr >= 0 && data.startingPriceInr <= 500000 &&
+        data.servicesOffered is list && data.servicesOffered.size() >= 1 && data.servicesOffered.size() <= 20 &&
+        data.servicesOffered[0] is map &&
+        data.operatingHours is string && data.operatingHours.size() >= 2 && data.operatingHours.size() <= 200 &&
+        data.cancellationPolicy is string && data.cancellationPolicy.size() >= 2 && data.cancellationPolicy.size() <= 500 &&
+        data.experienceYears is number && data.experienceYears >= 0 && data.experienceYears <= 80 &&
+        (!('coverImage' in data) || (data.coverImage is string && data.coverImage.size() <= 1000)) &&
+        data.verified is bool &&
+        data.status is string && (data.status in ['pending', 'approved', 'rejected']) &&
+        data.ratingAvg is number && data.ratingAvg >= 0 && data.ratingAvg <= 5 &&
+        data.reviewCount is number && data.reviewCount >= 0 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidProviderApplication(data) {
+      return data.keys().hasAll([
+          'applicantId', 'applicantName', 'businessName', 'categorySlug', 'categoryTitle',
+          'subcategories', 'services', 'city', 'area', 'address', 'pincode', 'description',
+          'experienceYears', 'operatingHours', 'cancellationPolicy', 'startingPriceInr',
+          'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'applicantId', 'applicantName', 'businessName', 'categorySlug', 'categoryTitle',
+          'subcategories', 'services', 'city', 'area', 'address', 'pincode', 'description',
+          'experienceYears', 'operatingHours', 'cancellationPolicy', 'startingPriceInr',
+          'status', 'rejectionReason', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.applicantId) &&
+        data.applicantName is string && data.applicantName.size() >= 2 && data.applicantName.size() <= 100 &&
+        data.businessName is string && data.businessName.size() >= 2 && data.businessName.size() <= 120 &&
+        data.categorySlug is string && data.categorySlug.size() >= 2 && data.categorySlug.size() <= 80 &&
+        data.categoryTitle is string && data.categoryTitle.size() >= 2 && data.categoryTitle.size() <= 100 &&
+        data.subcategories is list && data.subcategories.size() >= 1 && data.subcategories.size() <= 10 &&
+        data.subcategories[0] is string && data.subcategories[0].size() <= 100 &&
+        data.services is list && data.services.size() >= 1 && data.services.size() <= 20 &&
+        data.services[0] is map &&
+        data.city is string && data.city.size() >= 2 && data.city.size() <= 80 &&
+        data.area is string && data.area.size() >= 2 && data.area.size() <= 100 &&
+        data.address is string && data.address.size() >= 5 && data.address.size() <= 300 &&
+        data.pincode is string && data.pincode.size() >= 4 && data.pincode.size() <= 12 &&
+        data.description is string && data.description.size() >= 10 && data.description.size() <= 2000 &&
+        data.experienceYears is number && data.experienceYears >= 0 && data.experienceYears <= 80 &&
+        data.operatingHours is string && data.operatingHours.size() >= 2 && data.operatingHours.size() <= 200 &&
+        data.cancellationPolicy is string && data.cancellationPolicy.size() >= 2 && data.cancellationPolicy.size() <= 500 &&
+        data.startingPriceInr is number && data.startingPriceInr >= 0 && data.startingPriceInr <= 500000 &&
+        data.status is string && (data.status in ['draft', 'submitted', 'approved', 'rejected']) &&
+        (!('rejectionReason' in data) || (data.rejectionReason is string && data.rejectionReason.size() <= 500)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidProviderPrivateDoc(data) {
+      return data.keys().hasAll([
+          'applicantId', 'phone', 'email', 'idDocumentType', 'idDocumentRef', 'declarationAccepted', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'applicantId', 'phone', 'email', 'idDocumentType', 'idDocumentRef',
+          'licenseDocumentName', 'upiOrPayoutNote', 'declarationAccepted', 'updatedAt'
+        ]) &&
+        data.applicantId == request.auth.uid &&
+        isValidId(data.applicantId) &&
+        data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 25 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
+        data.idDocumentType is string && data.idDocumentType.size() >= 2 && data.idDocumentType.size() <= 80 &&
+        data.idDocumentRef is string && data.idDocumentRef.size() >= 2 && data.idDocumentRef.size() <= 120 &&
+        (!('licenseDocumentName' in data) || (data.licenseDocumentName is string && data.licenseDocumentName.size() <= 200)) &&
+        (!('upiOrPayoutNote' in data) || (data.upiOrPayoutNote is string && data.upiOrPayoutNote.size() <= 120)) &&
+        data.declarationAccepted is bool && data.declarationAccepted == true &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll([
+          'customerId', 'customerName', 'providerId', 'providerOwnerId', 'providerName',
+          'petId', 'petName', 'petSpecies', 'serviceName', 'priceInr',
+          'appointmentDate', 'appointmentTime', 'slotKey', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'customerId', 'customerName', 'providerId', 'providerOwnerId', 'providerName',
+          'petId', 'petName', 'petSpecies', 'serviceName', 'priceInr',
+          'appointmentDate', 'appointmentTime', 'slotKey', 'notes', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.customerId) &&
+        data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 100 &&
+        isValidId(data.providerId) &&
+        isValidId(data.providerOwnerId) &&
+        data.providerName is string && data.providerName.size() >= 1 && data.providerName.size() <= 120 &&
+        data.petId is string && data.petId.size() >= 1 && data.petId.size() <= 128 &&
+        data.petName is string && data.petName.size() >= 1 && data.petName.size() <= 80 &&
+        data.petSpecies is string && data.petSpecies.size() >= 1 && data.petSpecies.size() <= 40 &&
+        data.serviceName is string && data.serviceName.size() >= 1 && data.serviceName.size() <= 120 &&
+        data.priceInr is number && data.priceInr >= 0 && data.priceInr <= 500000 &&
+        data.appointmentDate is string && data.appointmentDate.size() >= 8 && data.appointmentDate.size() <= 20 &&
+        data.appointmentTime is string && data.appointmentTime.size() >= 4 && data.appointmentTime.size() <= 20 &&
+        data.slotKey is string && data.slotKey.size() >= 8 && data.slotKey.size() <= 180 &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+        data.status is string && (data.status in ['pending', 'confirmed', 'rescheduled', 'completed', 'cancelled', 'rejected']) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidReview(data) {
+      return data.keys().hasAll([
+          'authorId', 'authorName', 'providerId', 'bookingId', 'rating', 'comment', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'authorId', 'authorName', 'providerId', 'bookingId', 'rating', 'comment', 'status', 'createdAt', 'updatedAt'
+        ]) &&
+        data.authorId == request.auth.uid &&
+        isValidId(data.authorId) &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 100 &&
+        isValidId(data.providerId) &&
+        isValidId(data.bookingId) &&
+        data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+        data.comment is string && data.comment.size() >= 5 && data.comment.size() <= 1000 &&
+        data.status is string && (data.status in ['published', 'hidden']) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFavourite(data) {
+      return data.keys().hasAll(['userId', 'providerId', 'providerName', 'categoryTitle', 'city', 'createdAt']) &&
+        data.keys().hasOnly(['userId', 'providerId', 'providerName', 'categoryTitle', 'city', 'createdAt']) &&
+        data.userId == request.auth.uid &&
+        isValidId(data.userId) &&
+        isValidId(data.providerId) &&
+        data.providerName is string && data.providerName.size() >= 1 && data.providerName.size() <= 120 &&
+        data.categoryTitle is string && data.categoryTitle.size() >= 1 && data.categoryTitle.size() <= 100 &&
+        data.city is string && data.city.size() >= 1 && data.city.size() <= 80 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidEnquiry(data) {
+      return data.keys().hasAll(['userId', 'name', 'email', 'category', 'subject', 'message', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['userId', 'name', 'email', 'phone', 'category', 'subject', 'message', 'status', 'createdAt', 'updatedAt']) &&
+        data.userId == request.auth.uid &&
+        isValidId(data.userId) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 25)) &&
+        data.category is string && data.category.size() >= 2 && data.category.size() <= 80 &&
+        data.subject is string && data.subject.size() >= 3 && data.subject.size() <= 150 &&
+        data.message is string && data.message.size() >= 10 && data.message.size() <= 2000 &&
+        data.status is string && (data.status in ['open', 'resolved']) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidSiteSettings(data) {
+      return data.keys().hasAll(['phone', 'email', 'location', 'updatedAt']) &&
+        data.keys().hasOnly(['phone', 'email', 'location', 'playStoreUrl', 'appStoreUrl', 'founderPhotoUrl', 'updatedAt']) &&
+        data.phone is string && data.phone.size() >= 5 && data.phone.size() <= 30 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
+        data.location is string && data.location.size() >= 2 && data.location.size() <= 120 &&
+        (!('playStoreUrl' in data) || (data.playStoreUrl is string && data.playStoreUrl.size() <= 300)) &&
+        (!('appStoreUrl' in data) || (data.appStoreUrl is string && data.appStoreUrl.size() <= 300)) &&
+        (!('founderPhotoUrl' in data) || (data.founderPhotoUrl is string && data.founderPhotoUrl.size() <= 150000)) &&
+        data.updatedAt is timestamp;
+    }
+
+    // 4. Collection Rules
+
+    // /users/{userId}
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(userId) && request.auth.uid == userId &&
+        isValidUserPublic(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(userId) && isValidUserPublic(incoming()) && (
+        isAdmin() || (
+          request.auth.uid == userId &&
+          incoming().uid == existing().uid &&
+          incoming().role == existing().role &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt'])
+        )
+      );
+      allow delete: if isAdmin();
+
+      // PII Split Collection: /users/{userId}/private/{docId}
+      match /private/{docId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(docId) &&
+          (request.auth.uid == userId || isAdmin()) &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow list: if false;
+        allow create: if isVerifiedUser() && isValidId(userId) && isValidId(docId) &&
+          request.auth.uid == userId &&
+          isValidUserPrivate(incoming()) &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if isVerifiedUser() && isValidId(userId) && isValidId(docId) &&
+          isValidUserPrivate(incoming()) && (
+            isAdmin() || (
+              request.auth.uid == userId &&
+              incoming().uid == existing().uid &&
+              incoming().updatedAt == request.time &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['email', 'phone', 'city', 'pincode', 'address', 'updatedAt']) &&
+              exists(/databases/$(database)/documents/users/$(userId))
+            )
+          );
+        allow delete: if isAdmin();
+      }
+    }
+
+    // /pets/{petId}
+    match /pets/{petId} {
+      allow get: if isSignedIn() && isValidId(petId) && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(petId) &&
+        isValidPet(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      allow update: if isVerifiedUser() && isValidId(petId) && isValidPet(incoming()) && (
+        isAdmin() || (
+          existing().ownerId == request.auth.uid &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'species', 'breed', 'ageYears', 'weightKg', 'vaccinated', 'notes', 'updatedAt'])
+        )
+      );
+      allow delete: if isVerifiedUser() && isValidId(petId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // /providers/{providerId}
+    match /providers/{providerId} {
+      allow get: if isValidId(providerId) && (
+        resource.data.status == 'approved' ||
+        (isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin()))
+      );
+      allow list: if resource.data.status == 'approved' ||
+        (isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin()));
+      allow create: if isVerifiedUser() && isValidId(providerId) &&
+        isValidProvider(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time && (
+          isAdmin() || (
+            incoming().ownerId == request.auth.uid &&
+            incoming().verified == false &&
+            incoming().status == 'pending' &&
+            incoming().ratingAvg == 0 &&
+            incoming().reviewCount == 0 &&
+            exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          )
+        );
+      allow update: if isVerifiedUser() && isValidId(providerId) && isValidProvider(incoming()) && (
+        isAdmin() || (
+          existing().ownerId == request.auth.uid &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().verified == existing().verified &&
+          incoming().status == existing().status &&
+          incoming().ratingAvg == existing().ratingAvg &&
+          incoming().reviewCount == existing().reviewCount &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'businessName', 'categorySlug', 'categoryTitle', 'subcategories',
+            'description', 'city', 'area', 'address', 'pincode', 'publicPhone', 'publicEmail',
+            'website', 'startingPriceInr', 'servicesOffered', 'operatingHours',
+            'cancellationPolicy', 'experienceYears', 'coverImage', 'updatedAt'
+          ])
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // /providerApplications/{appId}
+    match /providerApplications/{appId} {
+      allow get: if isSignedIn() && isValidId(appId) && (resource.data.applicantId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.applicantId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(appId) &&
+        isValidProviderApplication(incoming()) &&
+        incoming().applicantId == request.auth.uid &&
+        (incoming().status == 'draft' || incoming().status == 'submitted') &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      allow update: if isVerifiedUser() && isValidId(appId) && isValidProviderApplication(incoming()) && (
+        isAdmin() || (
+          existing().applicantId == request.auth.uid &&
+          incoming().applicantId == existing().applicantId &&
+          existing().status != 'approved' &&
+          (incoming().status == 'draft' || incoming().status == 'submitted') &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'applicantName', 'businessName', 'categorySlug', 'categoryTitle',
+            'subcategories', 'services', 'city', 'area', 'address', 'pincode',
+            'description', 'experienceYears', 'operatingHours', 'cancellationPolicy',
+            'startingPriceInr', 'status', 'updatedAt'
+          ])
+        )
+      );
+      allow delete: if isAdmin();
+
+      // Master Gate Subcollection: /providerApplications/{appId}/privateDocs/{docId}
+      match /privateDocs/{docId} {
+        allow get: if isSignedIn() && isValidId(appId) && isValidId(docId) && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/providerApplications/$(appId)).data.applicantId == request.auth.uid
+        );
+        allow list: if false;
+        allow create: if isVerifiedUser() && isValidId(appId) && isValidId(docId) &&
+          isValidProviderPrivateDoc(incoming()) &&
+          incoming().updatedAt == request.time &&
+          get(/databases/$(database)/documents/providerApplications/$(appId)).data.applicantId == request.auth.uid;
+        allow update: if isVerifiedUser() && isValidId(appId) && isValidId(docId) &&
+          isValidProviderPrivateDoc(incoming()) && (
+            isAdmin() || (
+              incoming().applicantId == existing().applicantId &&
+              incoming().updatedAt == request.time &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'phone', 'email', 'idDocumentType', 'idDocumentRef',
+                'licenseDocumentName', 'upiOrPayoutNote', 'declarationAccepted', 'updatedAt'
+              ]) &&
+              get(/databases/$(database)/documents/providerApplications/$(appId)).data.applicantId == request.auth.uid
+            )
+          );
+        allow delete: if isAdmin();
+      }
+    }
+
+    // /bookings/{bookingId}
+    match /bookings/{bookingId} {
+      allow get: if isSignedIn() && isValidId(bookingId) && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.providerOwnerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow list: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.providerOwnerId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isVerifiedUser() && isValidId(bookingId) &&
+        isValidBooking(incoming()) &&
+        incoming().customerId == request.auth.uid &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/providers/$(incoming().providerId));
+      allow update: if isVerifiedUser() && isValidId(bookingId) && isValidBooking(incoming()) && (
+        isAdmin() || (
+          existing().status != 'completed' &&
+          existing().status != 'cancelled' &&
+          incoming().customerId == existing().customerId &&
+          incoming().providerId == existing().providerId &&
+          incoming().providerOwnerId == existing().providerOwnerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time && (
+            // Action 1: Customer cancels or requests reschedule
+            (
+              existing().customerId == request.auth.uid &&
+              (incoming().status == 'cancelled' || incoming().status == 'rescheduled') &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['status', 'appointmentDate', 'appointmentTime', 'slotKey', 'notes', 'updatedAt'])
+            ) ||
+            // Action 2: Provider accepts, rejects, completes, or reschedules
+            (
+              existing().providerOwnerId == request.auth.uid &&
+              (incoming().status in ['confirmed', 'rejected', 'rescheduled', 'completed']) &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['status', 'appointmentDate', 'appointmentTime', 'slotKey', 'notes', 'updatedAt'])
+            )
+          )
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // /reviews/{reviewId}
+    match /reviews/{reviewId} {
+      allow get: if isValidId(reviewId) && (resource.data.status == 'published' || isAdmin());
+      allow list: if resource.data.status == 'published' || isAdmin();
+      allow create: if isVerifiedUser() && isValidId(reviewId) &&
+        isValidReview(incoming()) &&
+        incoming().status == 'published' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/bookings/$(incoming().bookingId)) &&
+        get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.customerId == request.auth.uid;
+      allow update: if isVerifiedUser() && isValidId(reviewId) && isValidReview(incoming()) && (
+        isAdmin() || (
+          existing().authorId == request.auth.uid &&
+          incoming().authorId == existing().authorId &&
+          incoming().providerId == existing().providerId &&
+          incoming().bookingId == existing().bookingId &&
+          incoming().status == existing().status &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'comment', 'updatedAt'])
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // /favourites/{favId}
+    match /favourites/{favId} {
+      allow get: if isSignedIn() && isValidId(favId) && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(favId) &&
+        isValidFavourite(incoming()) &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/providers/$(incoming().providerId));
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(favId) && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // /enquiries/{enquiryId}
+    match /enquiries/{enquiryId} {
+      allow get: if isSignedIn() && isValidId(enquiryId) && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() && isValidId(enquiryId) &&
+        isValidEnquiry(incoming()) &&
+        incoming().status == 'open' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(enquiryId) && isValidEnquiry(incoming()) && isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // /siteSettings/{settingId}
+    match /siteSettings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if false;
+      allow create: if isVerifiedUser() && isValidId(settingId) && isValidSiteSettings(incoming()) &&
+        incoming().updatedAt == request.time && isAdmin();
+      allow update: if isVerifiedUser() && isValidId(settingId) && isValidSiteSettings(incoming()) &&
+        incoming().updatedAt == request.time && isAdmin();
+      allow delete: if false;
+    }
+
+    // /admins/{adminId}
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+  }
+}

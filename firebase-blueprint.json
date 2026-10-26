@@ -1,0 +1,358 @@
+{
+  "entities": {
+    "UserPublic": {
+      "title": "UserPublic",
+      "description": "Public profile for a TailsHug user without PII",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "role": { "type": "string", "enum": ["customer", "provider"] },
+        "photoURL": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "role", "createdAt", "updatedAt"]
+    },
+    "UserPrivate": {
+      "title": "UserPrivate",
+      "description": "Isolated PII record for a user (email, phone, address)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "city": { "type": "string", "maxLength": 80 },
+        "pincode": { "type": "string", "maxLength": 20 },
+        "address": { "type": "string", "maxLength": 300 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "updatedAt"]
+    },
+    "Pet": {
+      "title": "Pet",
+      "description": "Customer pet profile",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "species": { "type": "string", "enum": ["Dog", "Cat", "Bird", "Rabbit", "Other"] },
+        "breed": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "ageYears": { "type": "number" },
+        "weightKg": { "type": "number" },
+        "vaccinated": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "species", "breed", "ageYears", "weightKg", "vaccinated", "createdAt", "updatedAt"]
+    },
+    "Provider": {
+      "title": "Provider",
+      "description": "Registered TailsHug pet-care marketplace service provider",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "businessName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "categorySlug": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "categoryTitle": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "subcategories": { "type": "array" },
+        "description": { "type": "string", "minLength": 10, "maxLength": 2000 },
+        "city": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "area": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "address": { "type": "string", "minLength": 5, "maxLength": 300 },
+        "pincode": { "type": "string", "minLength": 4, "maxLength": 12 },
+        "publicPhone": { "type": "string", "minLength": 6, "maxLength": 25 },
+        "publicEmail": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "website": { "type": "string", "maxLength": 300 },
+        "startingPriceInr": { "type": "number" },
+        "servicesOffered": { "type": "array" },
+        "operatingHours": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "cancellationPolicy": { "type": "string", "minLength": 2, "maxLength": 500 },
+        "experienceYears": { "type": "number" },
+        "coverImage": { "type": "string", "maxLength": 1000 },
+        "verified": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "ratingAvg": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "ownerId",
+        "businessName",
+        "categorySlug",
+        "categoryTitle",
+        "subcategories",
+        "description",
+        "city",
+        "area",
+        "address",
+        "pincode",
+        "publicPhone",
+        "publicEmail",
+        "startingPriceInr",
+        "servicesOffered",
+        "operatingHours",
+        "cancellationPolicy",
+        "experienceYears",
+        "verified",
+        "status",
+        "ratingAvg",
+        "reviewCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProviderApplication": {
+      "title": "ProviderApplication",
+      "description": "Service provider onboarding application",
+      "type": "object",
+      "properties": {
+        "applicantId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "applicantName": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "businessName": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "categorySlug": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "categoryTitle": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "subcategories": { "type": "array" },
+        "services": { "type": "array" },
+        "city": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "area": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "address": { "type": "string", "minLength": 5, "maxLength": 300 },
+        "pincode": { "type": "string", "minLength": 4, "maxLength": 12 },
+        "description": { "type": "string", "minLength": 10, "maxLength": 2000 },
+        "experienceYears": { "type": "number" },
+        "operatingHours": { "type": "string", "minLength": 2, "maxLength": 200 },
+        "cancellationPolicy": { "type": "string", "minLength": 2, "maxLength": 500 },
+        "startingPriceInr": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "submitted", "approved", "rejected"] },
+        "rejectionReason": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "applicantId",
+        "applicantName",
+        "businessName",
+        "categorySlug",
+        "categoryTitle",
+        "subcategories",
+        "services",
+        "city",
+        "area",
+        "address",
+        "pincode",
+        "description",
+        "experienceYears",
+        "operatingHours",
+        "cancellationPolicy",
+        "startingPriceInr",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProviderPrivateDoc": {
+      "title": "ProviderPrivateDoc",
+      "description": "Restricted private verification documents and contact details for provider onboarding",
+      "type": "object",
+      "properties": {
+        "applicantId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "phone": { "type": "string", "minLength": 6, "maxLength": 25 },
+        "email": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "idDocumentType": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "idDocumentRef": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "licenseDocumentName": { "type": "string", "maxLength": 200 },
+        "upiOrPayoutNote": { "type": "string", "maxLength": 120 },
+        "declarationAccepted": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "applicantId",
+        "phone",
+        "email",
+        "idDocumentType",
+        "idDocumentRef",
+        "declarationAccepted",
+        "updatedAt"
+      ]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Appointment booking request between customer and registered provider",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "customerName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "providerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "providerOwnerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "providerName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "petId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "petName": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "petSpecies": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "serviceName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "priceInr": { "type": "number" },
+        "appointmentDate": { "type": "string", "minLength": 8, "maxLength": 20 },
+        "appointmentTime": { "type": "string", "minLength": 4, "maxLength": 20 },
+        "slotKey": { "type": "string", "minLength": 8, "maxLength": 180 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "rescheduled", "completed", "cancelled", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "customerId",
+        "customerName",
+        "providerId",
+        "providerOwnerId",
+        "providerName",
+        "petId",
+        "petName",
+        "petSpecies",
+        "serviceName",
+        "priceInr",
+        "appointmentDate",
+        "appointmentTime",
+        "slotKey",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Verified customer review for a provider",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "authorName": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "providerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "bookingId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "minLength": 5, "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["published", "hidden"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "authorId",
+        "authorName",
+        "providerId",
+        "bookingId",
+        "rating",
+        "comment",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Favourite": {
+      "title": "Favourite",
+      "description": "Saved provider favourite by a customer",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "providerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "providerName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "categoryTitle": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "city": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "providerId", "providerName", "categoryTitle", "city", "createdAt"]
+    },
+    "Enquiry": {
+      "title": "Enquiry",
+      "description": "Contact or support enquiry submitted by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "email": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 25 },
+        "category": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "subject": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "message": { "type": "string", "minLength": 10, "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["open", "resolved"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "email", "category", "subject", "message", "status", "createdAt", "updatedAt"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global site configuration and founder photo URL",
+      "type": "object",
+      "properties": {
+        "phone": { "type": "string", "minLength": 5, "maxLength": 30 },
+        "email": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "location": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "playStoreUrl": { "type": "string", "maxLength": 300 },
+        "appStoreUrl": { "type": "string", "maxLength": 300 },
+        "founderPhotoUrl": { "type": "string", "maxLength": 150000 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["phone", "email", "location", "updatedAt"]
+    },
+    "AdminDoc": {
+      "title": "AdminDoc",
+      "description": "Administrator registry document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "minLength": 3, "maxLength": 150 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublic" },
+      "description": "Public user profile document"
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivate" },
+      "description": "Strict PII isolation subcollection for user email, phone, and address"
+    },
+    "/pets/{petId}": {
+      "schema": { "$ref": "#/entities/Pet" },
+      "description": "Customer pet profiles"
+    },
+    "/providers/{providerId}": {
+      "schema": { "$ref": "#/entities/Provider" },
+      "description": "Registered TailsHug service providers"
+    },
+    "/providerApplications/{appId}": {
+      "schema": { "$ref": "#/entities/ProviderApplication" },
+      "description": "Provider onboarding applications"
+    },
+    "/providerApplications/{appId}/privateDocs/{docId}": {
+      "schema": { "$ref": "#/entities/ProviderPrivateDoc" },
+      "description": "Restricted private verification documents for provider applications"
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Customer to Provider appointment bookings"
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Verified customer reviews on providers"
+    },
+    "/favourites/{favId}": {
+      "schema": { "$ref": "#/entities/Favourite" },
+      "description": "Saved provider favourites"
+    },
+    "/enquiries/{enquiryId}": {
+      "schema": { "$ref": "#/entities/Enquiry" },
+      "description": "Support and contact enquiries"
+    },
+    "/siteSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/SiteSettings" },
+      "description": "Centralized site settings"
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminDoc" },
+      "description": "Trusted administrator lookup collection"
+    }
+  }
+}

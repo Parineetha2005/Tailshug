@@ -1,0 +1,6 @@
+{
+  "name": "TailsHug — Trusted Pet Care Marketplace",
+  "description": "TailsHug connects pet parents with trusted, verified pet care service providers across India for grooming, veterinary care, boarding, daycare, training, pet transport, and adoption.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
